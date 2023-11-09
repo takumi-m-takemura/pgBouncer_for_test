@@ -1,0 +1,40 @@
+ pgbouncer:
+    restart: always
+    image: pgbouncer/pgbouncer:latest
+    # depends_on:
+    # - db
+
+    # 設定値は下記を参照
+    # * Dockerイメージの環境変数: https://gitlab.com/aztek-io/pgbouncer-container/blob/master/entrypoint.sh
+    # * pgbouncer.iniの設定: https://pgbouncer.github.io/config.html
+    env_file:
+    - .env
+    environment:
+    - DATABASES_PORT=5432
+    - PGBOUNCER_LISTEN_PORT=5432
+
+    # c.f.
+    # * https://about.gitlab.com/2017/10/02/scaling-the-gitlab-database/
+    # * https://gitlab.com/gitlab-org/omnibus-gitlab/blob/c7fda3c84dc57fafe830b3318d337c6fea68eae5/files/gitlab-cookbooks/gitlab-ee/attributes/default.rb#L159-261
+    - PGBOUNCER_DEFAULT_POOL_SIZE=100
+    - PGBOUNCER_RESERVE_POOL_SIZE=5
+    - PGBOUNCER_RESERVE_POOL_TIMEOUT=3
+    - PGBOUNCER_MAX_CLIENT_CONN=2048
+    - PGBOUNCER_POOL_MODE=transaction
+    - PGBOUNCER_SERVER_IDLE_TIMEOUT=30
+    healthcheck:
+      # pgbouncerが起動しきるまで待つ
+      # FIXME: できればPostgreSQLに接続可能になるまで待ちたいのだがpsqlが入っていないので厳しい
+      test: ps aux | grep -v grep | grep pgbouncer
+      interval: 1s
+      timeout: 5s
+      retries: 30
+      # FIXME: 念の為待つ
+      start_period: 30s
+    # deploy:
+    #   restart_policy:
+    #     condition: on-failure
+    #   update_config:
+    #     parallelism: 1
+    #     delay: 1s
+    #     order: start-first
